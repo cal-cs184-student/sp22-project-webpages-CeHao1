@@ -1,6 +1,9 @@
 # My page is 
 https://cal-cs184-student.github.io/sp22-project-webpages-CeHao1/
 
+## project 1
+https://cal-cs184-student.github.io/sp22-project-webpages-CeHao1/proj1/index.html
+
 # CS184 Project Webpage Repo
 
 The goal of this repo is to provide a template from which students can host CS184 project writeups. 
