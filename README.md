@@ -2,7 +2,7 @@
 https://cal-cs184-student.github.io/sp22-project-webpages-CeHao1/
 
 ## project 1
-https://cal-cs184-student.github.io/sp22-project-webpages-CeHao1/proj1/index.html
+https://cal-cs184-student.github.io/sp22-project-webpages-CeHao1/proj1/
 
 # CS184 Project Webpage Repo
 
