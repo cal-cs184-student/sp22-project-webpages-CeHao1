@@ -1,23 +1,29 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-<style>
-  body {
-    padding: 100px;
-    width: 1000px;
-    margin: auto;
-    text-align: left;
-    font-weight: 300;
-    font-family: 'Open Sans', sans-serif;
-    color: #121212;
-  }
-  h1, h2, h3, h4 {
-    font-family: 'Source Sans Pro', sans-serif;
-  }
-</style>
-<title>CS 184 Rasterizer</title>
-<meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+  <style>
+    body {
+      padding: 100px;
+      width: 1000px;
+      margin: auto;
+      text-align: left;
+      font-weight: 300;
+      font-family: 'Open Sans', sans-serif;
+      color: #121212;
+    }
+    h1, h2, h3, h4 {
+      font-family: 'Source Sans Pro', sans-serif;
+    }
+  </style>
+  <title>CS 284 Rasterizer</title>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+  </script>
+  <script type="text/javascript"
+          src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+  </script>
 </head>
 
 
@@ -26,21 +32,104 @@
 <h1 align="middle">CS 284: Computer Graphics and Imaging, Spring 2022</h1>
 <h1 align="middle">Project 1: Rasterizer</h1>
 <h2 align="middle">Ce Hao</h2>
+<p> The website of this write up is: <a href="https://cal-cs184-student.github.io/sp22-project-webpages-CeHao1/proj1/index.html"> online write up </a></p>
+
 
 <br><br>
 
 <div>
 
 <h2 align="middle">Overview</h2>
-<p>Give a high-level overview of what you implemented in this project. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the project.</p>
+<p>In this project, we will learn how to rasterize triangles in the image coordinates and the Barycentric coordinates. 
+  Then we will apply texture mapping from the original figure to the distorted resultss by sampling on different mipmap level. 
+  In addition, we implemented a transform for translation, scaling and rotation.</p>
 
 <h2 align="middle">Section I: Rasterization</h2>
 
 <h3 align="middle">Part 1: Rasterizing single-color triangles</h3>
 
-<p>Here is an example 2x2 gridlike structure using an HTML table. Each <b>tr</b> is a row and each <b>td</b> is a column in that row. You might find this useful for framing and showing your result images in an organized fashion.</p>
+<p>The way we rasterize a triangle is as follows:</p>
+<ol>
+  <li>Find the bounding box of the triangle. The bounding box is defined as the rectangle from <code>(x_min,
+      y_min)</code> to <code>(x_max, y_max)</code>. <code>x_min</code> is the minimum x coordinate of the
+      three vertices, flooring to the nearest integer; <code>x_max</code> is the maximum x coordinate rounding up to ceiling.
+      Same thing applies to the y coordinate;
+  </li>
+  <li>For each pixel center in the bounding box, we test if the point is in the triangle using the naive normal
+      vector method. Notice that we need to first know the positive direction of each edge;
+  </li>
+  <li>If the point is in the triangle, we send the according color to the frame buffer.
+  </li>
+</ol>
+
+<p> This algorithm requires us to check every pixels in the bounding box of this triangle. The sampling times is proportional to the 
+  maximum height $H_{max}$ and maximum width $W_{max}$. So it is no worse than checking every points.
+</p>
 
 <div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/sample_rate_1.png" align="middle" width="400px"/>
+        <figcaption align="middle">Sample_rate = 1 (no supersampling)</figcaption>
+      </td>
+      <td>
+        <img src="images/sample_rate_4.png" align="middle" width="400px"/>
+        <figcaption align="middle">Sample_rate = 4</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="images/sample_rate_9.png" align="middle" width="400px"/>
+        <figcaption align="middle">Sample_rate = 9</figcaption>
+      </td>
+      <td>
+        <img src="images/sample_rate_16.png" align="middle" width="400px"/>
+        <figcaption align="middle">Sample_rate = 16</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p> 
+ The left upper figure is the result of rasterization without any supersampling. We can easily find many jaggies at thin triangle edge and even some 
+ pixels have no triangle shape.
+</p>
+
+
+<p>
+  We optimized the algorithm by changing the points in the image coordiantes by using Barycentric coordinates. Since
+  $\alpha + \beta + \gamma = 1$ in Barycentric coordinates, we don't need to compute $\gamma$ directly and roughly
+  saves about $1/3$ of the runtime. This is more obvious for larger triangles.
+</p>
+
+<div align="middle">
+  <table width="75%" align="middle">
+      <td>
+          Image coordinate method <br/>
+          <code>
+            time used for rasterize 0.501 ms <br/>
+            time used for rasterize 0.315 ms <br/>
+            time used for rasterize 0.173 ms <br/>
+            time used for rasterize 0.468 ms <br/>
+            time used for rasterize 0.056 ms <br/>
+          </code>
+      </td>
+      <td>
+          Barycentric coordinate method <br/>
+          <code>
+            time used for rasterize 0.423 ms <br/>
+            time used for rasterize 0.222 ms <br/>
+            time used for rasterize 0.144 ms <br/>
+            time used for rasterize 0.368 ms <br/>
+            time used for rasterize 0.036 ms <br/> 
+          </code>
+      </td>
+  </table>
+</div>
+
+<!-- <div align="middle">
   <table style="width=100%">
     <tr>
       <td>
@@ -64,33 +153,228 @@
       </td>
     </tr>
   </table>
-</div>
+</div> -->
 
 
 <h3 align="middle">Part 2: Antialiasing triangles</h3>
+<p>
+  To implement the supersampling, we need two steps. 
+</p>
+<ol>
+  <li> Sample the images with higher sampling rate and add pixels to the sample buffer</li>
+  <li> Then downsample (pooling) the sample buffer according to the sampling rate to the frame buffer to match the pixels</li>
+  <li> An extra trick is we also need to supersample the lines and dots in case the downsample makes the lines incorrect</li>
+</ol>
 
-
+<p>The super sampling is very useful to antialise. From the above figures of sampling rate = 4, 9, 16, we find that the discontinunity is 
+  mitigated gradually. In sample rate = 9 and 16, the needle part of this  pink triangle is blured and is more reasonable.
+</p>
+<p>The jaggies are actually aliasing made by high-frequency signals. So supersampling is just a window average (low-pass) filter.
+  After passing the low-pass filter, the original figure will not have very hard edges and the sampled figure is therefore performs better.
+</p>
 
 <h3 align="middle">Part 3: Transforms</h3>
 
+
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/transform.png" align="middle" width="400px"/>
+        <figcaption align="middle">Original figure</figcaption>
+      </td>
+      <td>
+        <img src="images/transform_run.png" align="middle" width="400px"/>
+        <figcaption align="middle">Running man !</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p> 
+  In this part, we first implemented three transform methods and then changed the .svg file to make the cube man in this figure like running.
+  Basically, it is very hard to directly change the parameters in the svg file. Maybe it is easier to use Illustrator change its angles and position.
+</p>
 
 
 <h2 align="middle">Section II: Sampling</h2>
 
 <h3 align="middle">Part 4: Barycentric coordinates</h3>
 
+<div align="middle">
+  <img src="images/color_circle.png" align="middle" width="40%"/>
+  <figcaption align="middle">A circle with rainbow color</figcaption>
+</div>
+
+<p> 
+  The barycentric coordinate is defined based on the edges of triangle. To rasterize the triangle using barycentric coordinate, we can map the texture
+  of this triangle to the image with follow steps.
+</p>
+
+<ol>
+  <li> Iterate over the pixels in the bounding box, by supersampling according to the rate</li>
+  <li> Choose two angles A and B, calculate the position of each pixel in the barycentric coordinate. 
+    The distance is from the chosen vertic to the pixel point over the height of this triangle related to this vertic.
+  </li>
+  <li> After getting $\alpha$, $\beta$ and $\gamma = 1 - \alpha - \beta$, we can map the color according to three vetices by 
+    $c = c_0\alpha + c_1\beta + c_3\gamma$
+  </li>
+</ol>
 
 <h3 align="middle">Part 5: "Pixel sampling" for texture mapping</h3>
+<p>
+  The texture mapping is implemented in the barycentric coordinate as well, but the difference is that we are mapping the texture of another bitmap rather than vector graph.
+</p>
 
+<ol>
+  <li>
+    Nearest mapping means when we sample every pixel for the texture, we only the find the nearest integer number and its corresponding pixel in the original image.
+    So it is very likely to find some large blocks of color, because those points are sample from a very close position from the original image.
+  </li>
+  <li>
+    Bilinear mapping considers the four nearest points near the sampling point, basically the upper left, upper right, bottom left and bottm right.
+    These four points formulate a high dimensional surface and we can use three interpolations to know the color of the sampled point on this surface.
+  </li>
+</ol>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/near_1.png" align="middle" width="400px"/>
+        <figcaption align="middle">Nearest rate = 1</figcaption>
+      </td>
+      <td>
+        <img src="images/near_16.png" align="middle" width="400px"/>
+        <figcaption align="middle">Nearest rate = 16</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="images/biline_1.png" align="middle" width="400px"/>
+        <figcaption align="middle">Bilinear rate = 1</figcaption>
+      </td>
+      <td>
+        <img src="images/bilin_16.png" align="middle" width="400px"/>
+        <figcaption align="middle">Bilinear rate = 16</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>
+  Here we compare the results of nearest and bilinear sampling at sampling rate = 1 and 16. We find that when rate = 1, the nearest and bilinear have 
+  large difference at each pixel, but they have little difference when rate = 16. This is beacuase when we apply supersampling, we will also visit the points
+  between integer pixels on the original image. The downsampling will blur the original image so the nearest point also contain the information for nearby pixels.
+  Therefore, if we only sample on the original image, bilinear method performs better for antialising.
+</p>
 
 <h3 align="middle">Part 6: "Level sampling" with mipmaps for texture mapping</h3>
+<p> 
+ The basic framework of mipmap sampling is very similar to the texture mapping. The difference is that we need to pre-downsample the image into lower resolution 
+ before we actually execute the sampling. In addition, we will also sample from one or multiple downsampled layers to mitigate the aliasing problem.
+</p>
+<ol>
+  <li> Iterate every sample pixels and calculate their $\alpha (u)$ and $\beta (v)$ in the barycentric coordinate.  </li>
+  <li> Then for each pixel, $+1$ on $x$ or $y$ direction, and get $du$ and $du$ by subtracting the original $u,v$</li>
+  <li> Calculate the degree of level $D$ according to the $log$ equation using $du$ and $dv$</li>
+  <li> For nearest method, we will round $D$ and sample at the $D$ mipmap level</li>
+  <li> For linear method, we need to sample at floor($D$) and ceil($D$) and interploate between two layers</li>
+</ol>
 
+<p> 
+  In order to store the mipmap figure, we need to store extra $1/3$ pixels for rgb figure. It costs more memory for NEAREST and LINEAR methods.
+  Sampling time at ZERO level and NEAEST level are identical, but sampling LINEAR level will spend double times for sampling pixels and also spend some extra time for interpolation.
+</p>
+<p>
+  However, using mipmap allow us to achieve coordinate-relative antialising by sampling in pre-calculated, optimized sequences of images, each of which is a progressively lower resolution representation of the previous.
+  They are intended to increase rendering speed and reduce aliasing artifacts. A high-resolution mipmap image is used for high-density samples, such as for objects close to the camera; lower-resolution images are used as the object appears farther away. 
+  This is a more efficient way of downfiltering (minifying) a texture than sampling all texels in the original texture that would contribute to a screen pixel; it is faster to take a constant number of samples from the appropriately downfiltered textures.
+</p>
 
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/t6_r1.png" align="middle" width="400px"/>
+        <figcaption align="middle">Distorted grid, sampling rate = 1</figcaption>
+      </td>
+      <td>
+        <img src="images/t6_r16.png" align="middle" width="400px"/>
+        <figcaption align="middle">Distorted grid, sampling rate = 16</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>
+We test the mipmap method using a customized distorted grid. First, we show the nearest sampling with different sampling rates. It is very obvious that without supersampling, the original 
+figure has very strong aliasing phenomenon (some discontinuous curves). So, we need some antialising methods !
+</p>
+
+<div align="middle">
+  <table width="100%" align="middle" style="border-spacing: 0">
+      <tr>
+          <td>
+              <img src="images/t6_L0_Pn.png" align="middle" style="width:100%"/>
+              <figcaption align="middle"><code>L_ZERO, P_NEAREST</code></figcaption>
+              <br>
+          </td>
+          <td>
+              <img src="images/t6_Lb_Pn.png" align="middle" style="width:100%"/>
+              <figcaption align="middle"><code>L_NEAREST, P_NEAREST</code></figcaption>
+              <br>
+          </td>
+          <td>
+              <img src="images/t6_Lb_Pn.png" align="middle" style="width:100%"/>
+              <figcaption align="middle"><code>L_LINEAR, P_NEAREST</code></figcaption>
+              <br>
+          </td>
+      </tr>
+      <br>
+      <tr>
+          <td>
+              <img src="images/t6_L0_Pb.png" align="middle" style="width:100%"/>
+              <figcaption align="middle"><code>L_ZERO, P_LINEAR</code></figcaption>
+          </td>
+          <td>
+              <img src="images/t6_Ln_Pb.png" align="middle" style="width:100%"/>
+              <figcaption align="middle"><code>L_NEAREST, P_LINEAR</code></figcaption>
+          </td>
+          <td>
+              <img src="images/t6_Lb_Pb.png" align="middle" style="width:100%"/>
+              <figcaption align="middle"><code>L_LINEAR, P_LINEAR</code></figcaption>
+          </td>
+      </tr>
+  </table>
+</div>
+
+<p>
+  Here we show six figures combining "L" mipmap level and "P" pixel sampling methods. We can find that by applying bilinear interpolation on pixels or sample on high-level mipmap levels,
+  the discontinunity was eliminated. </p>
+<p>
+  But in the figure <B><code>L_NEAREST, P_LINEAR</code></B>, it overly filters all high-frequency information and makes the image blured.
+  On the contrary, the <B><code>L_LINEAR, P_LINEAR</code></B> is better since it still remains the high-frequency features on the lower level maps.
+</p>
 
 <h2 align="middle">Section III: Art Competition</h2>
-<p>If you are not participating in the optional art competition, don't worry about this section!</p>
+<!-- <p>If you are not participating in the optional art competition, don't worry about this section!</p> -->
 
 <h3 align="middle">Part 7: Draw something interesting!</h3>
+
+<div align="middle">
+  <img src="images/bing.png" align="middle" width="50%"/>
+  <figcaption align="middle">A circle with rainbow color</figcaption>
+</div>
+
+<p> This cute panda is the mascot of 2022 Beijing Winter Olympic Game! We first triangulate the original image using 
+  <a href="https://snorpey.github.io/triangulation/"> triangulate tool</a>.
+  Then using our program to show the .svg file as png.
+</p>
+
+  
 
 </body>
 </html>
