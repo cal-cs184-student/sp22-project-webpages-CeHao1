@@ -1,6 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-
 <head>
   <style>
     body {
@@ -12,782 +11,370 @@
       font-family: 'Open Sans', sans-serif;
       color: #121212;
     }
-
-    h1,
-    h2,
-    h3,
-    h4 {
+    h1, h2, h3, h4 {
       font-family: 'Source Sans Pro', sans-serif;
     }
   </style>
-  <title>CS 284 PathTracer</title>
+  <title>CS 284 Rasterizer</title>
   <meta http-equiv="content-type" content="text/html; charset=utf-8" />
   <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+  </script>
+  <script type="text/javascript"
+          src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+  </script>
 </head>
 
 
 <body>
 
-  <h1 align="middle">CS 284: Computer Graphics and Imaging, Spring 2022</h1>
-  <h1 align="middle">Project 2: Assignment 3: PathTracer</h1>
-  <h2 align="middle">Ce Hao, CS284</h2>
-
-  <br><br>
-
-  <div>
-    <p> The website of this write up is: <a href="https://cal-cs184-student.github.io/sp22-project-webpages-CeHao1/proj3-1"> online write up </a></p>
-
-    <h2 align="middle">Overview</h2>
-    <p>In this project, we will finish five subtasks including Ray Generation and Scene Intersection, Bounding Volume Hierarchy, Direct Illumination,
-        Global Illumination and Adaptive Sampling. The first two subtasks are ray tracing algorithms. The third and fourth are illumination methods and 
-        finally we will adpatively change the sampling probability to accelerate the efficiency.
-    </p>
-
-        <!--========================================= Section 1 ========================================================= -->
-    <h2 align="middle">Section I: Ray Generation and Scene Intersection</h2>
-    <h3 align="middle"> Task 1: Generating Camera Rays </h3>
-    <p> In this task, we need to finish several steps.</p>
-    <ol>
-        <li> Calculate the true size of the sensor plane using hFov and vFov </li>
-        <li> Mapping the direction from the image coordiante to the sensor coordiante. </li>
-        <li> Normalize the direction and transform to the world coordiante. </li>
-        <li> Initialize min_t and max_t for the ray.</li>
-    </ol>
-    <p> Task 1 has no sanity check, we will show results together with task2. </p>
-
-    <h3 align="middle"> Task 2: Generating Pixel Samples </h3>
-    <ol>
-        <li> First, we scale the x, y by the width and height of the image.</li>
-        <li> Then we generate a ray using generate_ray we just finished in the last task.</li>
-        <li> Finally, update the pixel in the sampleBuffer.</li>
-    </ol>
-
-    <div align="middle">
-        <table width="100%" align="middle">
-            <tr>
-                <td align="middle">
-                    <img src="images/s1t2_CBempty.png" width="80%"/>
-                    <figcaption align="middle">CBempty</figcaption>
-                </td>
-                <td align="middle">
-                    <img src="images/s1t2_banana.png" width="80%"/>
-                    <figcaption align="middle">banana</figcaption>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-
-    <p> 
-    The two figures above are render results of CBempty and banana. By checking the color of each pixel, we make sure that our algorithm is correct.
-    </p>
-
-    <h3 align="middle"> Task 3: Ray-Triangle Intersection </h3>
-    <p>
-        In the third task, we implement the function to test whether the ray intersets with a triagnle.
-        I use similar way in barycentric coorndate with three vertices to calculate the intersection with the triangle plain.
-        If the traveling time t is within t_min and t_max, and the 
-        intersection point is inside the triangle, we will return true.
-    </p>
-    <p>
-        In addition, we can also update the information of this intersection point, time, weighted normal, primitive and bsdf.
-    </p>
-
-    <div align="middle">
-        <img src="images/s1t3_CBempty.png" align="middle" width="60%" />
-              <figcaption align="middle">CBempty</figcaption>
-      </div>
-
-    <p>
-        The figure shows the rendering result. Since we add a ramdom sampling variable, the result has some noise points at the edge of triangles.
-    </p>
-
-    <h3 align="middle"> Task 4: Ray-Sphere Intersection </h3>
-
-
-    <div align="middle">
-        <img src="images/s1t4_CBspheres.png" align="middle" width="60%" />
-              <figcaption align="middle">CB Sphere</figcaption>
-    </div>
-
-    <p>
-        This new task is just similar to task3, the only difference is we need to check the intersection points by bring in the ray function,
-        then solve a quadritic equation. If no solution, then so intersection. If any solution of t is within t_min and t_max, the ray has an 
-        intersection. And we can similarly calculate the information of the point using normal, primitive and BSDF.
-    </p>
-
-    <div align="middle">
-        <table width="100%" align="middle">
-            <tr>
-                <td align="middle">
-                    <img src="images/s1t4_coil.png" width="80%"/>
-                    <figcaption align="middle">coil</figcaption>
-                </td>
-                <td align="middle">
-                    <img src="images/s1t4_teapot.png" width="80%"/>
-                    <figcaption align="middle">teapot</figcaption>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <p> Finally, we also tested several other images, it was successful but very slow.</p>
-
-        <!--========================================= Section 2 ========================================================= -->
-    <h2 align="middle">Section II: Bounding Volume Hierarchy</h2>
-    <p>
-        First of all, we try to render the cow without any acceleration method. It took more than 70 seconds. Very slow!
-    </p>
-
-    <div align="middle">
-        <img src="images/s2t0_cow.png" align="middle" width="40%" />
-              <figcaption align="middle">Cow</figcaption>
-    </div>
-
-    <div align="middle">
-        <table width="75%" align="middle">
-            <td>
-                <B> Image name</B> <br/>
-                Cow without BVH <br/>
-                Teapot without BVH <br/>
-            </td>
-
-            <td>
-                <B> Number of BVH primitive</B> <br/>
-                5856 <br/>
-                2464 <br/>
-            </td>
-            
-            <td>
-                <B> Averaged tests per ray</B> <br/>
-                1088 <br/>
-                467 <br/>
-            </td> 
-
-            <td>
-                <B> Rendering time</B> <br/>
-                73.5235s <br/>
-                30.7059s <br/>
-            </td>
-
-        </table>
-    </div>
-
-    <p> So let's start the BVH now.</p>
-
-    <h3 align="middle"> Task 1: Constructing the BVH </h3>
-
-    <ol>
-        <li>
-            First, we need to construct the BVH structure. We sum up all the bouding box in one node and calculate the axis with maximum extension.
-            Then we choose the <B>centeriod point</B> of the summed bounding box and split along the axis with maximum extension.
-        </li>
-        <li>
-            Having got the split plane, we will iterate all primitives and check whether its center is on the negative or positive side of the plane.
-            Accordingly, we divide them into two groups and assgin the begin(), end() of the group as the start and end iterator.
-        </li>
-        <li>
-            Finally, we need to check whether the number of primitive in one box is smaller than the limit. If so, we regard it as a leaf, and we will
-            update the start and end of the new node, then return the original box. 
-            If it is not the leaf, we will divide it and recursively split for the left and right subnodes.
-        </li>
-        <li>
-            A special case is that if one subnode is empty, we will face an error that the larger group will be divided infinite times. 
-            So here we add a checker that if any subnode is empty, we will not divide it but regard it as a leaf node.
-        </li>
-    </ol>
-
-    <div align="middle">
-        <img src="images/s2t1_cow.png" align="middle" width="40%" />
-              <figcaption align="middle">Cow BVH construction</figcaption>
-    </div>
-
-    <p> After the first task, we can check the BVH condtion we made. Since we use centeriod to split, the meshes of two subnode have
-        almost the same shape.
-    </p>
-
-
-    <h3 align="middle"> Task 2: Intersecting the Bounding Box </h3>
-
-    <p>
-        Here the second task is easy. We check the t_min and t_max that the ray intersect with three axises, and get the maximum of t_min, and 
-        minimum of t_max. If the t is inside the limit of ray, we return true for the intersection. Namely, we not only check whether there exists
-        a true intersection, but also check whether the traveling time is within the limit. This will be very useful for the next task that 
-        to find the closest primitive (intersection point).
-    </p>
-
-    <h3 align="middle"> Task 3: Intersecting the BVH </h3>
-    <p>
-        In this task, we are applying the has_intersectionion and intersection functions in the primitives we implemented in the section one.
-    </p>
-    <ol>
-        <li>
-            In basic has_intersection function, if the given node is a leaf, we will iterate all primitives and call the has_intersection function. As long as one primitive intersects with
-            the ray, we return true.
-        </li>
-        <li>
-            For the advanced intersect function, we also need to update the Intersection point. To implement this we need a small trick.
-            If the node is not a leaf, we do not need to update the intersection, but call the left and right subnodes recursively.
-        </li>
-        <li>
-            When we face a leaf node, we will call the intersect function in every primitive, which will corresponding update the Intersection,
-            as well as the t_max of the ray. Therefore, the t_max will be shorter and shorter as we cut it. Finally, we obtain the true 
-            intersection point with minimum t_max, namely the nearest point.
-        </li>
-
-    </ol>
-
-    <p> Now let's compare the results with and without BVH acceleration.</p>
-
-
-    <div align="middle">
-        <table width="75%" align="middle">
-            <td>
-                <B> Image name</B> <br/>
-                Cow <B>without</B> BVH <br/>
-                Cow <B>with</B> BVH <br/>
-                Teapot <B>without</B> BVH <br/>
-                Teapot <B>with</B> BVH <br/>
-                
-            </td>
-
-            <td>
-                <B> BVH traced rays</B> <br/>
-                479706 <br/>
-                337464 <br/>
-                479260 <br/>
-                334856 <br/>
-            </td>
-            
-            <td>
-                <B> Averaged intersection tests/ray</B> <br/>
-                1088 <br/>
-                1.848472 <br/>
-                467 <br/>
-                1.394991 <br/>
-            </td> 
-
-            <td>
-                <B> Rendering time</B> <br/>
-                73.5s <br/>
-                0.0542s  <br/>
-                30.7s <br/>
-                0.0529s <br/>
-            </td>
-
-        </table>
-    </div>
-
-    <p>
-        In the above table, we compare several parameters of the rendering. It is very obvious that the rendering time has been 
-        reduced significantly, less than 0.001 of the original time. This is basically because we only test a small number of intersection for 
-        each ray. Since we will first test whether the ray has any intersection with a high-level bouding box, we can easily rule out many 
-        useless volume, and therefore significantly increase the efficiency.
-    </p>
-
-    <div align="middle">
-        <table width="100%" align="middle">
-            <tr>
-                <td align="middle">
-                    <img src="images/s2_lucy.png" width="80%"/>
-                    <figcaption align="middle">lucy</figcaption>
-                </td>
-                <td align="middle">
-                    <img src="images/s2_maxplank.png" width="80%"/>
-                    <figcaption align="middle">maxplank</figcaption>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <p> Here we also tried two more complex examples, but they only used less than 0.1 second to render, which is super fast.</p>
-
-    <!--========================================= Section 2 ========================================================= -->
-    <h2 align="middle">Section III: Direct Illumination</h2>
-    <p>
-        In the third section, we will implement the direct illumination with 0-bounce or 1-bounce.
-    </p>
-
-    <h3 align="middle"> Task 1: Diffuse BSDF </h3>
-    <p>
-        In this task, we finish a easy function of diffuse BSDF. In fact, diffuse BSDF is not determined by the direction of rays.
-        It depends on the albedo represented by the reflectance parameter. The integral of cos and sin of a sphere is pi. 
-        But the reflection is only in a hemisphere, so the radiance is just pi.
-        Finally, the diffuse radiance is reflectance/pi.
-    </p>
-    <p>
-        Another function is to sample incident rays based on given pdf. We use the sampler to sample a ray using pdf as wi, 
-        then call the f function to convert it as wo. The implementation is very simple.
-    </p>
-
-    <h3 align="middle"> Task 2: Zero-bounce Illumination </h3>
-    <p> We finish the function zero_bounce_radiance and call it in est_radiance_global_illumination.
-        So we change the normal_shading as zero_bounce_radiance.
-    </p>
-    <p> A very easy thing is that BSDF have a get_emission() so directly estimate the intensity from light source.
-        The following figure is the rendering result. We can only see the position with light source bright.
-    </p>
-    <div align="middle">
-        <img src="images/s3t2_CBbunny_16_8.png" align="middle" width="40%" />
-              <figcaption align="middle">0-bounce</figcaption>
-    </div>
-
-
-    <h3 align="middle"> Task 3: Direct Lighting with Uniform Hemisphere Sampling </h3>
-
-    <p>
-        In this task, we will implement uniform hemisphere sampling method, and at the one-bounce illumination in the est_radiance_global_illumination.
-        We will take the following steps.
-    </p>
-
-    <ol>
-        <li>
-            We use the MC estimator with uniform hemisphere distribution with N = num_samples. So first, we use the sampler to 
-            sample some wi and convert it into the world coordinate.
-        </li>
-        <li>
-            Given the hit point, we will find the light rays that come into this point. But we do not want to add the hit point itself.
-            So we add the position of the ray origin with a small epsilon number.
-        </li>
-        <li> 
-            Next step is to implement the reflective function, which has three parts. BSDF using wi and wo; radiance from the wi direction and the 
-            cos angle. 
-        </li>
-        <li>
-            Finally, we sum up all irrandiance and divide it by the probability of uniform hemisphere distribution: 2*pi.
-        </li>
-    </ol>
-
-
-    <div align="middle">
-        <table style="width=100%">
-          <tr>
-            <td>
-              <img src="images/s3t3_CBbunny_H_1_1.png" align="middle" width="400px"/>
-              <figcaption align="middle"> uniform hemisphere, 1 sample light ray</figcaption>
-            </td>
-            <td>
-              <img src="images/s3t3_CBbunny_H_1_4.png" align="middle" width="400px"/>
-              <figcaption align="middle"> uniform hemisphere, 4 sample light rays</figcaption>
-            </td>
-          </tr>
-          <br>
-          <tr>
-            <td>
-              <img src="images/s3t3_CBbunny_H_1_16.png" align="middle" width="400px"/>
-              <figcaption align="middle"> uniform hemisphere, 16 sample light rays</figcaption>
-            </td>
-            <td>
-              <img src="images/s3t3_CBbunny_H_1_64.png" align="middle" width="400px"/>
-              <figcaption align="middle"> uniform hemisphere, 64 sample light rays</figcaption>
-            </td>
-          </tr>
-        </table>
-      </div>
-
-    <p>
-        First, we test the result with only one sample per pixel. And we vary the number of light rays as 1,4,16, 64.
-        Very obvious, more sample rays generates better quality of the figure. When l=1 or 4, we can not distingush the rabbit in the figure.
-    </p>
-
-
-    <div align="middle">
-        <table width="100%" align="middle">
-            <tr>
-                <td align="middle">
-                    <img src="images/s3t3_CBbunny_H_16_8.png" width="80%"/>
-                    <figcaption align="middle">uniform hemisphere, s16, l8</figcaption>
-                </td>
-                <td align="middle">
-                    <img src="images/s3t3_CBbunny_H_64_32.png" width="80%"/>
-                    <figcaption align="middle">uniform hemisphere, s64, l32</figcaption>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <p>
-        Then we also test results with more sample per pixel and number of light rays. THe results are better, we can 
-        still find some noise even though we have used much time for the sampling.
-        Besically, this is because the light source only covers a small range of the hemisphere, so unifromly sample across the hemisphere
-        even with 64 rays still has large variance.
-    </p>
-
-    <h3 align="middle"> Task 4: Direct Lighting by Importance Sampling Lights </h3>
-    <p>
-        Instead of randomly sample across the whole sphere, we can only sample rays from the light area. 
-        We implement the algorithm in the estimate_direct_lighting_importance function based on the following steps.
-    </p>
-    <p>
-        The difference with task 3 is only about how to generate the sample rays. In task 3, we use uniform sample, but in task 4, 
-        we directly sample from the light area. In addition, the pdf of MC estimator would be different too.
-    </p>
-
-    <ol>
-        <li>
-            First, we iterate all lights in the scene-lights, and check wheter the light source is a point using is_delta_light() function.
-        </li>
-        <li>
-            Then we sample num_samples light using the sample_L function, which also updates wi, dist and pdf accordingly.
-        </li>
-        <li>
-            Convert wi to the world coordinate and check whether the angle between light source direction and wi is smaller than pi by checking 
-            the cos value. If not, the light cannot reflect to this hit point, so we pass this ray.
-        </li>
-        <li>
-            Simialr to task 3, we add a small epsilon to the origin of the ray and apply the reflection equation with BSDF, intensity, and cos law.
-            Finally, integrate all rays and divide the pdf we obtained from sample_L function.
-        </li>
-    </ol>
-
-
-    <div align="middle">
-        <table style="width=100%">
-          <tr>
-            <td>
-              <img src="images/s3t4_CBbunny_I_1_1.png" align="middle" width="400px"/>
-              <figcaption align="middle"> Importance light, 1 sample light ray</figcaption>
-            </td>
-            <td>
-              <img src="images/s3t4_CBbunny_I_1_4.png" align="middle" width="400px"/>
-              <figcaption align="middle"> Importance light, 4 sample light rays</figcaption>
-            </td>
-          </tr>
-          <br>
-          <tr>
-            <td>
-              <img src="images/s3t4_CBbunny_I_1_16.png" align="middle" width="400px"/>
-              <figcaption align="middle"> Importance light, 16 sample light rays</figcaption>
-            </td>
-            <td>
-              <img src="images/s3t4_CBbunny_I_1_64.png" align="middle" width="400px"/>
-              <figcaption align="middle"> Importance light, 64 sample light rays</figcaption>
-            </td>
-          </tr>
-        </table>
-      </div>
-
-    <p>
-        Here we try similar experiments of different sample light rays. Surprsingly, even one sample ray can render recognizable figure.
-        It is even as good as 64 rays of uniform hemisphere sampling. By sampling 64 rays, we can even tell the textures bumps on the body of the rabbit.
-        This is because we sample from very efficient directions of the light source area.
-    </p>
-
-      <div align="middle">
-        <table width="100%" align="middle">
-            <tr>
-                <td align="middle">
-                    <img src="images/s3t4_bunny_64_32.png" width="80%"/>
-                    <figcaption align="middle">Importance light, s64, l32, bunnny</figcaption>
-                </td>
-                <td align="middle">
-                    <img src="images/s3t4_dragon_64_32.png" width="60%"/>
-                    <figcaption align="middle">Importance light, s64, l32 dragon</figcaption>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <p>
-        We also test using more samples per pixel and light rays in the bunny and dragon figures. They look very smooth and the soft shade effect
-        is also very obvious. To be honest, these figures are rather photorealistic.
-    </p>
-
-
-    <div align="middle">
-        <table style="width=100%">
-          <tr>
-            <td>
-              <img src="images/s3t3_CBbunny_H_1_1.png" align="middle" width="200px"/>
-              <figcaption align="middle"> uniform , 1 sample </figcaption>
-            </td>
-            <td>
-              <img src="images/s3t3_CBbunny_H_1_4.png" align="middle" width="200px"/>
-              <figcaption align="middle"> uniform , 4 sample </figcaption>
-            </td>
-            <td>
-            <img src="images/s3t3_CBbunny_H_1_16.png" align="middle" width="200px"/>
-            <figcaption align="middle"> uniform , 16 sample </figcaption>
-            </td>
-            <td>
-            <img src="images/s3t3_CBbunny_H_1_64.png" align="middle" width="200px"/>
-            <figcaption align="middle"> uniform , 64 sample </figcaption>
-            </td>
-          </tr>
-          <br>
-          <tr>
-            <td>
-                <img src="images/s3t4_CBbunny_I_1_1.png" align="middle" width="200px"/>
-                <figcaption align="middle"> importance , 1 sample </figcaption>
-              </td>
-              <td>
-                <img src="images/s3t4_CBbunny_I_1_4.png" align="middle" width="200px"/>
-                <figcaption align="middle"> importance , 4 sample </figcaption>
-              </td>
-              <td>
-              <img src="images/s3t4_CBbunny_I_1_16.png" align="middle" width="200px"/>
-              <figcaption align="middle"> importance , 16 sample </figcaption>
-              </td>
-              <td>
-              <img src="images/s3t4_CBbunny_I_1_64.png" align="middle" width="200px"/>
-              <figcaption align="middle"> importance , 64 sample </figcaption>
-              </td>
-            
-          </tr>
-        </table>
-      </div>
-
-
-      <p>
-          Now we compare two methods. They both converge to the true lighting of the scene. 
-          However, light sampling converges much faster as the number of light rays per pixel increased. 
-          Also, we can see that different parts of the scene also converges in a different rate. 
-          The bottom of the back walls converges quite fast, while the complex part of the bunny and the soft shadows converges relatively slow. 
-          This is due to the fact that if there is something is partially blocking a point from receiving the light,
-          importance light sampling might find that some of the samples are blocked and thus the sample becomes useless.
-      </p>
-
-    <!--========================================= Section 4 ========================================================= -->
-    <h2 align="middle">Section IV: Global Illumination</h2>
-    
-    <h3 align="middle"> Task 1: Sampling with Diffuse BSDF </h3>
-      <p>
-          We have implemented diffuse BSDF in the last section, so we skip it here.
-      </p>
-    <h3 align="middle"> Task 2: Global Illumination </h3>
-    <p>
-        at_least_one_bounce_radiance function is a recursion method with max_ray_depth. In addition to the max ray limitation,
-        we can also use the Russian Roulette method to ramdonly stop the bounce at some iterations. Here we set the prob as 0.3.
-        The implementation steps are as follows.
-    </p>
-
-    <ol>
-        <li>
-            At each iteration, we need to accumulate the one-bounce once and subtract the depth once to ensure the termination of loop.
-        </li>
-        <li>
-            If the depth is greater than one, we need to call the next layer at_least_one_bounce_radiance.
-            Then we sample the bsdf distribution wi and wout as we did for one-bounce uniform hemisphere distribution.
-        </li>
-        <li>
-            So the next ray direction is the wi of the higher ray iteration. Then we apply the reflection equation again.
-            But the intensity is given by the at_least_one_bounce_radiance using next ray.
-        </li>
-        <li>
-            Once the ray depth is 0, we stop the recursion. But a special case is that even if we have remaining rays, we can randomly stop it 
-            using the Russian Roulette method. But we need to divide the prob of stop in order to make it unbiased.
-        </li>
-    </ol>
-
-    <h4> Exp 1: Rendering with global illumination</h4>
-    <p> In the first experiment, we rendered some images using the global illumination.
-        The results show that they are rendered correctly.
-    </p>
-    
-    <div align="middle">
-        <table style="width=100%">
-          <tr>
-            <td>
-              <img src="images/s4e1_bunny_1024_64_4.png" align="middle" width="300px"/>
-              <figcaption align="middle"> Bunny</figcaption>
-            </td>
-            <td>
-              <img src="images/s4e1_bench_1024_64_4.png" align="middle" width="300px"/>
-              <figcaption align="middle"> Bench</figcaption>
-            </td>
-          </tr>
-          <br>
-          <tr>
-            <td>
-              <img src="images/s4e1_blob_1024_64_4.png" align="middle" width="300px"/>
-              <figcaption align="middle"> Blob</figcaption>
-            </td>
-            <td>
-              <img src="images/s4e1_dragon_1024_64_4.png" align="middle" width="300px"/>
-              <figcaption align="middle"> Dragon</figcaption>
-            </td>
-          </tr>
-        </table>
-      </div>
-
-
-    <h4> Exp 2: Rendering with only direct or indirect illuminations</h4>
-
-    <div align="middle">
-        <table width="100%" align="middle">
-            <tr>
-                <td align="middle">
-                    <img src="images/s4e2_spheres_direct.png" width="80%"/>
-                    <figcaption align="middle">Direct illumination, m=0 + 1</figcaption>
-                </td>
-                <td align="middle">
-                    <img src="images/s4e2_spheres_indirect.png" width="80%"/>
-                    <figcaption align="middle">Indirect illumination, m=2 + 3 + 4</figcaption>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <p>
-        In this experiment, we slightly change the at_least_one_bounce_radiance function and separate as two conditions.
-        Here we use s=1024, l=16 for the rendering.
-    </p>
-    <p>
-        Direct illumination when m=1+2,  is really dark and the ceiling has no direct reflection. The bright and dark places are very clear.
-        And it has strong shadow area beneath the sphere.
-        However, the indirect illumination shows the lights after at least two bounces. The ceiling therefore has bounced lights.
-        The whole picture is very dim, but the shadow area is very small.
-    </p>
-
-    <h4> Exp 3: Change the ray max ray depth for Bunny</h4>
-
-    <div align="middle">
-        <table style="width=100%">
-          <tr>
-            <td>
-              <img src="images/s4e3_bunny_64_32_0.png" align="middle" width="300px"/>
-              <figcaption align="middle"> m=0 </figcaption>
-            </td>
-            <td>
-              <img src="images/s4e3_bunny_64_32_1.png" align="middle" width="300px"/>
-              <figcaption align="middle"> m=1</figcaption>
-            </td>
-          </tr>
-          <br>
-          <tr>
-            <td>
-              <img src="images/s4e3_bunny_64_32_2.png" align="middle" width="300px"/>
-              <figcaption align="middle"> m=2</figcaption>
-            </td>
-            <td>
-              <img src="images/s4e3_bunny_64_32_3.png" align="middle" width="300px"/>
-              <figcaption align="middle"> m=3</figcaption>
-            </td>
-
-            <td>
-                <img src="images/s4e3_bunny_64_32_100.png" align="middle" width="300px"/>
-                <figcaption align="middle"> m=100</figcaption>
-              </td>
-          </tr>
-        </table>
-      </div>
-
-    <p>
-        In this expeirment, we use sample pixel = 64, light ray = 32 and change the number of max ray bounce as 0,1,2,3 and 100.
-        BTW, we unbale the Russian Roulette in this experiment.
-        m=0 means zero bounce and shows the light source. m=1 is the direct illumination so it is a bit dark. 
-        More specifically, the ceiling is totally dark since the light cannot directly reflect on the ceiling. And the area beneath 
-        the bounny's body is also totally dark.
-    </p>
-    <p>
-        When m=2, we include the 1-bounce illumination so the some lights are reflected to the bunney, which makes it much brighter.
-        But as m increases to 3, the bouncing radiation reduces exponentially through the BSDF and effect is not so obvious.
-        As we make m = 100, when the expected bouncing has already converged, the birghtness is just similar to m=3. 
-        So in practice, we donot have to require too many bounces in the rendering tasks. m=4 is approximately good enough.
-    </p>
-
-    <h4> Exp 4: Change the number of sample per pixel</h4>
-    <div align="middle">
-        <table style="width=100%">
-          <tr>
-            <td>
-              <img src="images/s4e4_spheres_s1_l4_m5.png" align="middle" width="200px"/>
-              <figcaption align="middle"> s=1 </figcaption>
-            </td>
-            <td>
-              <img src="images/s4e4_spheres_s2_l4_m5.png" align="middle" width="200px"/>
-              <figcaption align="middle"> s=2 </figcaption>
-            </td>
-            <td>
-            <img src="images/s4e4_spheres_s4_l4_m5.png" align="middle" width="200px"/>
-            <figcaption align="middle"> s=4 </figcaption>
-            </td>
-            <td>
-            <img src="images/s4e4_spheres_s8_l4_m5.png" align="middle" width="200px"/>
-            <figcaption align="middle"> s=8 </figcaption>
-            </td>
-          </tr>
-          <br>
-          <tr>
-            <td>
-                <img src="images/s4e4_spheres_s16_l4_m5.png" align="middle" width="200px"/>
-                <figcaption align="middle"> s=16 </figcaption>
-              </td>
-              <td>
-                <img src="images/s4e4_spheres_s32_l4_m5.png" align="middle" width="200px"/>
-                <figcaption align="middle"> s=32 </figcaption>
-              </td>
-              <td>
-              <img src="images/s4e4_spheres_s64_l4_m5.png" align="middle" width="200px"/>
-              <figcaption align="middle"> s=64 </figcaption>
-              </td>
-              <td>
-              <img src="images/s4e4_spheres_s1024_l4_m5.png" align="middle" width="200px"/>
-              <figcaption align="middle"> s=1024 </figcaption>
-              </td>
-            
-          </tr>
-        </table>
-      </div>
-
-      <p>
-          In this experiment, we use l=4, m=5 and vary s=1,2,4,8,16,32,64 and 1024.
-          It shows that once we sample more times on a pixel, we can effectively reduce the variance and noise on each pixel. 
-      </p>
-      <p>
-          When s=64, the picture is much smoother than when s=1 or 2. And when we increase s to 1024, the noisy points are all eliminated.
-      </p>
-
-    <!--========================================= Section 5 ========================================================= -->
-    <h2 align="middle">Section V: Adaptive Sampling</h2>
-
-    <p>
-        In this section, we aim at implemention an adaptive sampling method, which triggers more samples at the pixels with lower converging speed,
-        and early stop the sampling where have already converged. We will estimate the condtion convergence using the mean and standard deviation of 
-        sampled points. The steps are as follows.
-    </p>
-
-    <ol>
-        <li>
-            When sampling for each pixel, we will accumulate the value of illumination and its squred value as s1, s2. Also sum up the number of iterations
-            as n.
-        </li>
-        <li>
-            We will check the stop flag every samplesPerBatch iterations, by calculation the mu and variance using s1, s2.
-        </li>
-        <li>
-            The I = 1.96 * sqrt(variance / n) if I is smaller than maxTolerance*mu, we will stop the sampling and fill the sampleCountBuffer with n.
-        </li>
-
-    </ol>
-
-    <div align="middle">
-        <table width="100%" align="middle">
-            <tr>
-                <td align="middle">
-                    <img src="images/s5_bunny.png" width="80%"/>
-                    <figcaption align="middle">Bunny</figcaption>
-                </td>
-                <td align="middle">
-                    <img src="images/s5_bunny_part5_rate.png" width="80%"/>
-                    <figcaption align="middle">Bunny, sampling rate</figcaption>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <p>
-        The above figures are bunny with sample per pixel = 2048, samplesPerBatch = 64, tolorance=0.05, light ray=1 and max ray depth=5.
-        The rendering result seems very nice even though we only use a small light ray number. 
-    </p>
-    <p>
-        From the sampling rate figure, we can find that the place where we can preceie directly illumination converges much faster than the one that
-        is blocked by some obstacles. For example, the walls and the back of the bunney are directly illuminated by the light source, so we do not need
-        to sample too many times. But on the contrary, places with shadows are only illuminated by the indirect rays after several bounces so 
-        they have large variance and converge solwers. So the place under the bunney's body are sampled more times.
-    </p>
-    
+<h1 align="middle">CS 284: Computer Graphics and Imaging, Spring 2022</h1>
+<h1 align="middle">Project 1: Rasterizer</h1>
+<h2 align="middle">Ce Hao</h2>
+<p> The website of this write up is: <a href="https://cal-cs184-student.github.io/sp22-project-webpages-CeHao1/proj1/index.html"> online write up </a></p>
+
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p>In this project, we will learn how to rasterize triangles in the image coordinates and the Barycentric coordinates. 
+  Then we will apply texture mapping from the original figure to the distorted resultss by sampling on different mipmap level. 
+  In addition, we implemented a transform for translation, scaling and rotation.</p>
+
+<h2 align="middle">Section I: Rasterization</h2>
+
+<h3 align="middle">Part 1: Rasterizing single-color triangles</h3>
+
+<p>The way we rasterize a triangle is as follows:</p>
+<ol>
+  <li>Find the bounding box of the triangle. The bounding box is defined as the rectangle from <code>(x_min,
+      y_min)</code> to <code>(x_max, y_max)</code>. <code>x_min</code> is the minimum x coordinate of the
+      three vertices, flooring to the nearest integer; <code>x_max</code> is the maximum x coordinate rounding up to ceiling.
+      Same thing applies to the y coordinate;
+  </li>
+  <li>For each pixel center in the bounding box, we test if the point is in the triangle using the naive normal
+      vector method. Notice that we need to first know the positive direction of each edge;
+  </li>
+  <li>If the point is in the triangle, we send the according color to the frame buffer.
+  </li>
+</ol>
+
+<p> This algorithm requires us to check every pixels in the bounding box of this triangle. The sampling times is proportional to the 
+  maximum height $H_{max}$ and maximum width $W_{max}$. So it is no worse than checking every points.
+</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/sample_rate_1.png" align="middle" width="400px"/>
+        <figcaption align="middle">Sample_rate = 1 (no supersampling)</figcaption>
+      </td>
+      <td>
+        <img src="images/sample_rate_4.png" align="middle" width="400px"/>
+        <figcaption align="middle">Sample_rate = 4</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="images/sample_rate_9.png" align="middle" width="400px"/>
+        <figcaption align="middle">Sample_rate = 9</figcaption>
+      </td>
+      <td>
+        <img src="images/sample_rate_16.png" align="middle" width="400px"/>
+        <figcaption align="middle">Sample_rate = 16</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p> 
+ The left upper figure is the result of rasterization without any supersampling. We can easily find many jaggies at thin triangle edge and even some 
+ pixels have no triangle shape.
+</p>
+
+
+<p>
+  We optimized the algorithm by changing the points in the image coordiantes by using Barycentric coordinates. Since
+  $\alpha + \beta + \gamma = 1$ in Barycentric coordinates, we don't need to compute $\gamma$ directly and roughly
+  saves about $1/3$ of the runtime. This is more obvious for larger triangles.
+</p>
+
+<div align="middle">
+  <table width="75%" align="middle">
+      <td>
+          Image coordinate method <br/>
+          <code>
+            time used for rasterize 0.501 ms <br/>
+            time used for rasterize 0.315 ms <br/>
+            time used for rasterize 0.173 ms <br/>
+            time used for rasterize 0.468 ms <br/>
+            time used for rasterize 0.056 ms <br/>
+          </code>
+      </td>
+      <td>
+          Barycentric coordinate method <br/>
+          <code>
+            time used for rasterize 0.423 ms <br/>
+            time used for rasterize 0.222 ms <br/>
+            time used for rasterize 0.144 ms <br/>
+            time used for rasterize 0.368 ms <br/>
+            time used for rasterize 0.036 ms <br/> 
+          </code>
+      </td>
+  </table>
+</div>
+
+<!-- <div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/image1.png" align="middle" width="400px"/>
+        <figcaption align="middle">Caption goes here.</figcaption>
+      </td>
+      <td>
+        <img src="images/image2.png" align="middle" width="400px"/>
+        <figcaption align="middle">Caption goes here.</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="images/image3.png" align="middle" width="400px"/>
+        <figcaption align="middle">Caption goes here.</figcaption>
+      </td>
+      <td>
+        <img src="images/image4.png" align="middle" width="400px"/>
+        <figcaption align="middle">Caption goes here.</figcaption>
+      </td>
+    </tr>
+  </table>
+</div> -->
+
+
+<h3 align="middle">Part 2: Antialiasing triangles</h3>
+<p>
+  To implement the supersampling, we need two steps. 
+</p>
+<ol>
+  <li> Sample the images with higher sampling rate and add pixels to the sample buffer</li>
+  <li> Then downsample (pooling) the sample buffer according to the sampling rate to the frame buffer to match the pixels</li>
+  <li> An extra trick is we also need to supersample the lines and dots in case the downsample makes the lines incorrect</li>
+</ol>
+
+<p>The super sampling is very useful to antialise. From the above figures of sampling rate = 4, 9, 16, we find that the discontinunity is 
+  mitigated gradually. In sample rate = 9 and 16, the needle part of this  pink triangle is blured and is more reasonable.
+</p>
+<p>The jaggies are actually aliasing made by high-frequency signals. So supersampling is just a window average (low-pass) filter.
+  After passing the low-pass filter, the original figure will not have very hard edges and the sampled figure is therefore performs better.
+</p>
+
+<h3 align="middle">Part 3: Transforms</h3>
+
+
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/transform.png" align="middle" width="400px"/>
+        <figcaption align="middle">Original figure</figcaption>
+      </td>
+      <td>
+        <img src="images/transform_run.png" align="middle" width="400px"/>
+        <figcaption align="middle">Running man !</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p> 
+  In this part, we first implemented three transform methods and then changed the .svg file to make the cube man in this figure like running.
+  Basically, it is very hard to directly change the parameters in the svg file. Maybe it is easier to use Illustrator change its angles and position.
+</p>
+
+
+<h2 align="middle">Section II: Sampling</h2>
+
+<h3 align="middle">Part 4: Barycentric coordinates</h3>
+
+<div align="middle">
+  <img src="images/color_circle.png" align="middle" width="40%"/>
+  <figcaption align="middle">A circle with rainbow color</figcaption>
+</div>
+
+<p> 
+  The barycentric coordinate is defined based on the edges of triangle. To rasterize the triangle using barycentric coordinate, we can map the texture
+  of this triangle to the image with follow steps.
+</p>
+
+<ol>
+  <li> Iterate over the pixels in the bounding box, by supersampling according to the rate</li>
+  <li> Choose two angles A and B, calculate the position of each pixel in the barycentric coordinate. 
+    The distance is from the chosen vertic to the pixel point over the height of this triangle related to this vertic.
+  </li>
+  <li> After getting $\alpha$, $\beta$ and $\gamma = 1 - \alpha - \beta$, we can map the color according to three vetices by 
+    $c = c_0\alpha + c_1\beta + c_3\gamma$
+  </li>
+</ol>
+
+<h3 align="middle">Part 5: "Pixel sampling" for texture mapping</h3>
+<p>
+  The texture mapping is implemented in the barycentric coordinate as well, but the difference is that we are mapping the texture of another bitmap rather than vector graph.
+</p>
+
+<ol>
+  <li>
+    Nearest mapping means when we sample every pixel for the texture, we only the find the nearest integer number and its corresponding pixel in the original image.
+    So it is very likely to find some large blocks of color, because those points are sample from a very close position from the original image.
+  </li>
+  <li>
+    Bilinear mapping considers the four nearest points near the sampling point, basically the upper left, upper right, bottom left and bottm right.
+    These four points formulate a high dimensional surface and we can use three interpolations to know the color of the sampled point on this surface.
+  </li>
+</ol>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/near_1.png" align="middle" width="400px"/>
+        <figcaption align="middle">Nearest rate = 1</figcaption>
+      </td>
+      <td>
+        <img src="images/near_16.png" align="middle" width="400px"/>
+        <figcaption align="middle">Nearest rate = 16</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="images/biline_1.png" align="middle" width="400px"/>
+        <figcaption align="middle">Bilinear rate = 1</figcaption>
+      </td>
+      <td>
+        <img src="images/bilin_16.png" align="middle" width="400px"/>
+        <figcaption align="middle">Bilinear rate = 16</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>
+  Here we compare the results of nearest and bilinear sampling at sampling rate = 1 and 16. We find that when rate = 1, the nearest and bilinear have 
+  large difference at each pixel, but they have little difference when rate = 16. This is beacuase when we apply supersampling, we will also visit the points
+  between integer pixels on the original image. The downsampling will blur the original image so the nearest point also contain the information for nearby pixels.
+  Therefore, if we only sample on the original image, bilinear method performs better for antialising.
+</p>
+
+<h3 align="middle">Part 6: "Level sampling" with mipmaps for texture mapping</h3>
+<p> 
+ The basic framework of mipmap sampling is very similar to the texture mapping. The difference is that we need to pre-downsample the image into lower resolution 
+ before we actually execute the sampling. In addition, we will also sample from one or multiple downsampled layers to mitigate the aliasing problem.
+</p>
+<ol>
+  <li> Iterate every sample pixels and calculate their $\alpha (u)$ and $\beta (v)$ in the barycentric coordinate.  </li>
+  <li> Then for each pixel, $+1$ on $x$ or $y$ direction, and get $du$ and $du$ by subtracting the original $u,v$</li>
+  <li> Calculate the degree of level $D$ according to the $log$ equation using $du$ and $dv$</li>
+  <li> For nearest method, we will round $D$ and sample at the $D$ mipmap level</li>
+  <li> For linear method, we need to sample at floor($D$) and ceil($D$) and interploate between two layers</li>
+</ol>
+
+<p> 
+  In order to store the mipmap figure, we need to store extra $1/3$ pixels for rgb figure. It costs more memory for NEAREST and LINEAR methods.
+  Sampling time at ZERO level and NEAEST level are identical, but sampling LINEAR level will spend double times for sampling pixels and also spend some extra time for interpolation.
+</p>
+<p>
+  However, using mipmap allow us to achieve coordinate-relative antialising by sampling in pre-calculated, optimized sequences of images, each of which is a progressively lower resolution representation of the previous.
+  They are intended to increase rendering speed and reduce aliasing artifacts. A high-resolution mipmap image is used for high-density samples, such as for objects close to the camera; lower-resolution images are used as the object appears farther away. 
+  This is a more efficient way of downfiltering (minifying) a texture than sampling all texels in the original texture that would contribute to a screen pixel; it is faster to take a constant number of samples from the appropriately downfiltered textures.
+</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/t6_r1.png" align="middle" width="400px"/>
+        <figcaption align="middle">Distorted grid, sampling rate = 1</figcaption>
+      </td>
+      <td>
+        <img src="images/t6_r16.png" align="middle" width="400px"/>
+        <figcaption align="middle">Distorted grid, sampling rate = 16</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p>
+We test the mipmap method using a customized distorted grid. First, we show the nearest sampling with different sampling rates. It is very obvious that without supersampling, the original 
+figure has very strong aliasing phenomenon (some discontinuous curves). So, we need some antialising methods !
+</p>
+
+<div align="middle">
+  <table width="100%" align="middle" style="border-spacing: 0">
+      <tr>
+          <td>
+              <img src="images/t6_L0_Pn.png" align="middle" style="width:100%"/>
+              <figcaption align="middle"><code>L_ZERO, P_NEAREST</code></figcaption>
+              <br>
+          </td>
+          <td>
+              <img src="images/t6_Lb_Pn.png" align="middle" style="width:100%"/>
+              <figcaption align="middle"><code>L_NEAREST, P_NEAREST</code></figcaption>
+              <br>
+          </td>
+          <td>
+              <img src="images/t6_Lb_Pn.png" align="middle" style="width:100%"/>
+              <figcaption align="middle"><code>L_LINEAR, P_NEAREST</code></figcaption>
+              <br>
+          </td>
+      </tr>
+      <br>
+      <tr>
+          <td>
+              <img src="images/t6_L0_Pb.png" align="middle" style="width:100%"/>
+              <figcaption align="middle"><code>L_ZERO, P_LINEAR</code></figcaption>
+          </td>
+          <td>
+              <img src="images/t6_Ln_Pb.png" align="middle" style="width:100%"/>
+              <figcaption align="middle"><code>L_NEAREST, P_LINEAR</code></figcaption>
+          </td>
+          <td>
+              <img src="images/t6_Lb_Pb.png" align="middle" style="width:100%"/>
+              <figcaption align="middle"><code>L_LINEAR, P_LINEAR</code></figcaption>
+          </td>
+      </tr>
+  </table>
+</div>
+
+<p>
+  Here we show six figures combining "L" mipmap level and "P" pixel sampling methods. We can find that by applying bilinear interpolation on pixels or sample on high-level mipmap levels,
+  the discontinunity was eliminated. </p>
+<p>
+  But in the figure <B><code>L_NEAREST, P_LINEAR</code></B>, it overly filters all high-frequency information and makes the image blured.
+  On the contrary, the <B><code>L_LINEAR, P_LINEAR</code></B> is better since it still remains the high-frequency features on the lower level maps.
+</p>
+
+<h2 align="middle">Section III: Art Competition</h2>
+<!-- <p>If you are not participating in the optional art competition, don't worry about this section!</p> -->
+
+<h3 align="middle">Part 7: Draw something interesting!</h3>
+
+<div align="middle">
+  <img src="images/bing.png" align="middle" width="50%"/>
+  <figcaption align="middle">A circle with rainbow color</figcaption>
+</div>
+
+<p> This cute panda is the mascot of 2022 Beijing Winter Olympic Game! We first triangulate the original image using 
+  <a href="https://snorpey.github.io/triangulation/"> triangulate tool</a>.
+  Then using our program to show the .svg file as png.
+</p>
+
+  
 
 </body>
-
 </html>

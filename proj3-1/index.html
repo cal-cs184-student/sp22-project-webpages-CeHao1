@@ -46,7 +46,7 @@
         <!--========================================= Section 1 ========================================================= -->
     <h2 align="middle">Section I: Ray Generation and Scene Intersection</h2>
     <h3 align="middle"> Task 1: Generating Camera Rays </h3>
-    <p> In this task, we need to finish several steps. </p>
+    <p> In this task, we need to finish several steps.</p>
     <ol>
         <li> Calculate the true size of the sensor plane using hFov and vFov </li>
         <li> Mapping the direction from the image coordiante to the sensor coordiante. </li>
@@ -749,10 +749,14 @@
 
     <ol>
         <li>
-            When sampling for each pixel, we will accumulate the value of illumination and its squred value to calculate the mean and variance.
+            When sampling for each pixel, we will accumulate the value of illumination and its squred value as s1, s2. Also sum up the number of iterations
+            as n.
         </li>
         <li>
-            After sample number to a batch, then we check whether I is greater than the max tolorance * mu. If so, we stop the sampling for this pixel.
+            We will check the stop flag every samplesPerBatch iterations, by calculation the mu and variance using s1, s2.
+        </li>
+        <li>
+            The I = 1.96 * sqrt(variance / n) if I is smaller than maxTolerance*mu, we will stop the sampling and fill the sampleCountBuffer with n.
         </li>
 
     </ol>
