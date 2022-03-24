@@ -1,7 +1,385 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 3-2 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+  <style>
+    body {
+      padding: 100px;
+      width: 1000px;
+      margin: auto;
+      text-align: left;
+      font-weight: 300;
+      font-family: 'Open Sans', sans-serif;
+      color: #121212;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+      font-family: 'Source Sans Pro', sans-serif;
+    }
+  </style>
+  <title>CS 284 PathTracer</title>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+  <h1 align="middle">CS 284: Computer Graphics and Imaging, Spring 2022</h1>
+  <h1 align="middle">Project 3-2: PathTracer</h1>
+  <h2 align="middle">Ce Hao, CS284</h2>
+
+  <br><br>
+
+  <div>
+    <p> The website of this write up is: <a href="https://cal-cs184-student.github.io/sp22-project-webpages-CeHao1/proj3-2/index.html"> online write up </a></p>
+
+    <h2 align="middle">Overview</h2>
+    <p> In this project, we choose two parts <B> Part 1: Mirror and Glass Materials </B> and <B> Part 4: Depth of Field </B> to render
+        glass material and the blur caused by focal length. The details will be presented in each section.
+    </p>
+
+
+    <h2 align="middle"> Part 1: Mirror and Glass Materials </h2>
+    <p> In this part, we will sequentially finish the reflection and reraction BSDF, and the sample function. Then we will track the multiple bounce
+        throught one mirror sphere and one glass sphere.
+    </p>
+
+    <h3 align="middle">Task 1 : Mirror reflection</h3>
+      <p> The mirror reflection is directly a transmission of rays. We use the following steps.</p>
+
+      <ol>
+        <li>
+          First in the reflect function, we use z axis as normal vector, so the wo = {-wi.x, -wi.y, wi.z}. The plane coordiante is reflected based on z.
+        </li>
+        <li>
+          Then in the sample_f, we call the reflect function to get wo, and set the pdf=1. The return irradiance is the reflectance / |cos(theta)|.
+        </li>
+      </ol>
+
+      <div align="middle">
+        <img src="images/p1_t1_dragon.png" align="middle" width="40%" />
+              <figcaption align="middle">Mirror dragon</figcaption>
+      </div>
+
+      <p>
+        The dragon is the results of mirror reflection.
+      </p>
+
+      <h3 align="middle">Task 2 : Refraction</h3>
+      <p> In this task, we need to fill in the refract function and the sample_f. Here we need to consider the total internal reflectin problem.
+        The exact steps are in the following.
+      </p>
+
+      <ol>
+        <li>
+          Judge the entering and exiting lights using the sign of z. If entering then eta=1/ior, else eta=ior.
+        </li>
+        <li>
+          Calculate the discriminant using eta and z. If it is negative, then only internal reflection. So nothing happens.
+        </li>
+        <li>
+          If the discriminant is positive, there exists refract light and then formulate the wi using wo and eta.
+          Then return transmittance / abs_cos_theta(*wi) / eta^2 in the high-level.
+        </li>
+      </ol>
+
+      <div align="middle">
+        <img src="images/p1_t2_sphere_ref.png" align="middle" width="40%" />
+              <figcaption align="middle">Sphere refract(front)</figcaption>
+      </div>
+
+      <p> Here we render the pure refraction of the front sphere. We can see that it has no reflection, but only the refraction rays.</p>
+
+      <h3 align="middle">Task 3 : Glass Material</h3>
+      <p> In this task, we will combine reflection and refraction using the coin_flip indicator.</p>
+
+      <ol>
+        <li>
+          First, we check the total internal reflection, we will do similar thing like in the reflection task.
+        </li>
+        <li>
+          Then we go into the partial reflection and refraction. We calculate the Schlick's reflection coefficient R and check the condition using
+          function coin_flip.
+        </li>
+        <li>
+          If coin_flip is ture (random number is smaller than r), we use the reflection and pdf = R. Otherwise, we use refraction and pdf = 1-R.
+        </li>
+      </ol>
+
+      <p> Here we show a sequence of CBspheres in which two spheres are glass with reflection and refraction.
+        We iterate the max_ray_depth as 0,1,2,3,4,5,6 and 100.
+      </p>
+
+      <div align="middle">
+        <table style="width=100%">
+          <tr>
+            <td>
+              <img src="images/p1_t3_sphere_m0.png" align="middle" width="200px"/>
+              <figcaption align="middle"> max_ray_depth 0 </figcaption>
+            </td>
+            <td>
+              <img src="images/p1_t3_sphere_m1.png" align="middle" width="200px"/>
+              <figcaption align="middle"> max_ray_depth 1</figcaption>
+            </td>
+            <td>
+            <img src="images/p1_t3_sphere_m2.png" align="middle" width="200px"/>
+            <figcaption align="middle"> max_ray_depth 2 </figcaption>
+            </td>
+            <td>
+            <img src="images/p1_t3_sphere_m3.png" align="middle" width="200px"/>
+            <figcaption align="middle"> max_ray_depth 3</figcaption>
+            </td>
+          </tr>
+          <br>
+          <tr>
+            <td>
+                <img src="images/p1_t3_sphere_m4.png" align="middle" width="200px"/>
+                <figcaption align="middle"> max_ray_depth 4</figcaption>
+              </td>
+              <td>
+                <img src="images/p1_t3_sphere_m5.png" align="middle" width="200px"/>
+                <figcaption align="middle"> max_ray_depth 5</figcaption>
+              </td>
+              <td>
+              <img src="images/p1_t3_sphere_m6.png" align="middle" width="200px"/>
+              <figcaption align="middle"> max_ray_depth 6</figcaption>
+              </td>
+              <td>
+              <img src="images/p1_t3_sphere_m100.png" align="middle" width="200px"/>
+              <figcaption align="middle"> max_ray_depth 100</figcaption>
+              </td>
+          </tr>
+        </table>
+      </div>
+
+
+      <p>
+        When max depth from 0 to 5, we can find the light tracking is totally different. So in the following part, we will point out 
+        their unique phenomenon and analyze the reasons. we use <B> rfl </B> to represent reflection, and <B> rfr</B> to represent the refraction.
+      </p>
+
+
+      <p>
+        <B>At depth 0, only direct light source.</B> Since there is no bounce of light, we can only preceive the light from the light source, so that 
+        the other places are just black.
+      </p>
+      <p>
+      <B>At depth 1, reflection shows up.</B> We can see the deffuse reflection from the walls and the mirror reflection from the sphere. 
+        But there is no refraction because the light must go enter and exit the sphere so it takes at least two bounces.
+    </p>
+      <p>
+        <B> At depth 2, refraction through sphere shows up + reflection from wall to sphere shows up. </B>
+          Here we can observe two new phenomenons. 
+          
+          <ol>
+            <li>
+              light -> wall/front sphere(rfl) -> behind sphere(rfl). This shows more on the behind(left) sphere, so 
+              we can see the red, blue patch from the wall, and black patch from the front sphere.
+            </li>
+            <li>
+              light -> right sphere back(rfr) -> right sphere front(rfr). The light refracts through the right sphere twice so we can we some
+              lights go through it. But only very little refraction lights go through it because of the a lot of lights are still inside the sphere 
+              so it is still very dark.
+            </li>
+          </ol>
+      </p>
+
+      <p>
+        <B> At depth 3, more reflection and refrection entering and exiting the sphere.</B>
+        It is very obvious that the two spheres are much brighter, becuase two new traces are added. And the ground of the right sphere has 
+        a light circle. We can explain it using the following reasons. 
+      </p>
+
+      <ol>
+        <li>
+          light -> right sphere(rfr, enter) -> right sphere(rfr, exit) -> ground. The light refracts through the right sphere and illuminates the ground,
+          so we can see a light circle.
+        </li>
+
+        <li>
+          light -> wall or another sphere(rfl) -> sphere(rfr, enter) -> sphere(rfr, exit). Becuase more reflective light from the environment 
+          come to the sphere so we can see the right sphere much brighter, and the left side is the image of blue wall.
+        </li>
+      </ol>
+
+      <p> <B>At depth 4, the image of the right sphere in the left sphere is not dark anymore + a small light circle on the blue wall. </B> 
+        They are generated by 4 bounces rays.
+      </p>
+
+      <ol>
+        <li>
+          light -> blue wall -> right sphere(rfr, enter) -> right sphere(rfr, exit) -> left sphere(rfl). This trace makes the spot on left sphere blue.
+        </li>
+        <li>
+          light -> right sphere(rfr, enter) -> right sphere(internal reflection) -> right sphere(rfr, exit) -> blue wall(rfl). 
+          After several bouncing on the outer and inner surface of right sphere, we can see a small light spot on the blue wall.
+        </li>
+      </ol>
+
+      <p> <B>At depth 5 to 100, no more extra features</B> The images are just simialr to the depth 4, and it is only a bit brighter than
+       less bounces because the energy of bounces decrease exponentially.</p>
+
+
+
+       <h2 align="middle"> Part 4: Depth of Field </h2>
+
+        <p>
+          In this part, we need to implement the thin-len camera model to visaulize the effect of the depth of field.
+        </p>
+
+
+        <div align="middle">
+          <img src="images/pinhole.png" align="middle" width="35%" />
+                <figcaption align="middle">Pin-hold model</figcaption>
+        </div>
+        <p>
+          In the previous tasks, we used to assume we are using the pin-hole model. All lights must go through a small hole at the origin,
+          so for one pixel, it can only receive the light directly from the small hole. We do not have to integrate many light beams since
+          only one light can go through the pin hole at a specific direction. The value of each pixel is not blurred by many light sources.
+        </p>
+
+        <div align="middle">
+          <img src="images/thin.jpg" align="middle" width="50%" />
+                <figcaption align="middle">Thin-len model</figcaption>
+        </div>
+
+        <p> 
+          In this new task, we will use the thin-len model instead. Except for the light directly goes through the origin, all the lights from the 
+          focal plane will always cast on the image plane. This causes a problem that if the central ray intersects an object that is not at the 
+          focal plane, the pixel will still receive many rays come from the focal plane at other places. So this pixel is blurred.
+          The only place with clear pixels is where its central ray intersect with object exactly on the focal plane.
+        </p>
+
+        <div align="middle">
+          <img src="images/thin_ill.jpg" align="middle" width="50%" />
+                <figcaption align="middle">implementation method</figcaption>
+        </div>
+
+        <p>
+          Instead of only using the red line in the above figure, we will ramdonly sample rays from the dist of len radius. 
+          For example, some rays like the yellow will refract on the thin len at some position, and the refracted ray will point to the 
+          point where the central ray hits the focal plane. So at the begining, we need to find the hitting point of the red line and the focal plane.
+          Then randomly sample rays in the scope of len dist and find the blue ray and trace through it. As brief summary is as follows.
+        </p>
+
+        <ol>
+          <li>
+            Find the sampling position at the image plane as Proj 3-1, then calculate the central ray direction (red line) using the sample positin and the origin.
+          </li>
+          <li>
+            To uniformly sample from a disk, we use two variables rndR in [0,1), rndTheta[0,2pi) that covering the unit circle. Then we map it 
+            to the len dist with radius LensRadius by rndR and the phase angle by rndTheta. This is the hitting point on the len position(z=0), so we can 
+            use it to calculate start of blue line.
+          </li>
+          <li>
+            Next, we need to find the hitting point of red line and the focal plane. We connect the sample position and the origin, then trace forward until
+            reach the focal plane. The hitting point is the end of blue line.
+          </li>
+          <li>
+            Finally, we derive the direction of blue line and normalize it. Converting the directin and the origin to the world coordinate, and 
+            clip the intersection time min_t and max_t.
+          </li>
+        </ol>
+
+        <div align="middle">
+          <table style="width=100%">
+            <tr>
+              <td>
+                <img src="images/p4_t1_dragon_before.png" align="middle" width="400px"/>
+                <figcaption align="middle"> FocalDist=4.4, focus in front of the dragon</figcaption>
+              </td>
+              <td>
+                <img src="images/p4_t1_dragon_head.png" align="middle" width="400px"/>
+                <figcaption align="middle"> FocalDist=4.56, focus at the dragon head</figcaption>
+              </td>
+            </tr>
+            <br>
+            <tr>
+              <td>
+                <img src="images/p4_t1_dragon_tail.png" align="middle" width="400px"/>
+                <figcaption align="middle"> FocalDist=4.9, focus at the dragon tail</figcaption>
+              </td>
+              <td>
+                <img src="images/p4_t1_dragon_after.png" align="middle" width="400px"/>
+                <figcaption align="middle"> FocalDist=5.9, focus behind the dragon</figcaption>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+
+        <p>
+          In the first experiment, we change the focal distance from a small value 4.4 to a larger value 5.9. During the shifting,
+          the focal region on the dragon is changing. When focal distance = 4.4, we focus on the plane in front of the dragon.
+          As we increase the focal distance, the focal plane moves to the dragon head, then dragon tail and the plane behind it.
+          Here we use the aperture radius=1.23.
+        </p>
+
+        <div align="middle">
+          <img src="images/depth.jpg" align="middle" width="60%" />
+                <figcaption align="middle">implementation method</figcaption>
+        </div>
+
+        <p>
+          In the next task, we fix the focal distance=4.56 and change the aperture(disk) radius as 2, 1, 0.5 and 0.1. 
+          Here we can see a clear phenomenon of the depth of field. 
+        </p>
+
+        <p> The depth of field is generated because our human can somehow tolorant some small blur even if the object is not perfectly placed on the 
+          focal plane. If the aperture is small, only little light except for the central ray can go through the len. So if the len radius is 
+          extremely small, the result is identical to the pin-hold model, and the depth of field is infinitely long. 
+        </p>
+        <p>
+          But as we increase the aperture radius, a large amount of lights from other direction hit to the sampling pixel as well, so it is more blury.
+          And consequently, the depth of field is very short.
+        </p>
+
+        
+
+        <div align="middle">
+          <table style="width=100%">
+            <tr>
+              <td>
+                <img src="images/p4_t2_dragon_2.png" align="middle" width="400px"/>
+                <figcaption align="middle"> aperture radius = 2</figcaption>
+              </td>
+              <td>
+                <img src="images/p4_t2_dragon_1.png" align="middle" width="400px"/>
+                <figcaption align="middle"> aperture radius = 1</figcaption>
+              </td>
+            </tr>
+            <br>
+            <tr>
+              <td>
+                <img src="images/p4_t2_dragon_05.png" align="middle" width="400px"/>
+                <figcaption align="middle"> aperture radius = 0.5</figcaption>
+              </td>
+              <td>
+                <img src="images/p4_t2_dragon_01.png" align="middle" width="400px"/>
+                <figcaption align="middle"> aperture radius = 0.1</figcaption>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+      <p>
+        Through the four images, when r=2, the image is totally blured; when r=1, the chest region is sharper.
+        Then r=0.5 the head region is more obvious, and finally when we reduce r=0.1, the whole dragon is sharp. 
+        During this procedure, the depth of field is increasing and gradually cover the depth of the dragon. 
+      </p>
+
+      <p>
+        In the autonomous camera system such as cellphone, we usually find that even if two objects are very far, we do not 
+        find the blury. I think they use two ways to metigate this problem. First, use smaller aperture; second, process the image 
+        electronically such as image processing techiques. The depth of field might be a useful tool for photographer and artist, 
+        but for us students, we prefer the photo with less blur. 
+      </p>
+      
+
+</body>
+
 </html>
